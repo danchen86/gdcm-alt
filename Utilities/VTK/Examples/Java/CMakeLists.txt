@@ -1,0 +1,51 @@
+set(classpath ${LIBRARY_OUTPUT_PATH}/vtkgdcm.jar${JavaProp_PATH_SEPARATOR}${LIBRARY_OUTPUT_PATH}/gdcm.jar${JavaProp_PATH_SEPARATOR}${VTK_JAVA_JAR}${JavaProp_PATH_SEPARATOR}${GDCM_VTK_JAVA_JAR})
+
+set(classfilesdep)
+set(examples
+  HelloVTKWorld
+  ReadSeriesIntoVTK
+  #AWTMedical3
+  MPRViewer2
+  )
+if(VTK_HAS_IMAGERESLICEMAPPER)
+  set(examples
+    ${examples}
+    MPRViewer
+    )
+endif()
+if(VTK_HAS_SMARTVOLUMEMAPPER)
+  set(examples
+    ${examples}
+    MIPViewer
+    )
+endif()
+FOREACH(example ${examples})
+  ADD_CUSTOM_COMMAND(
+    OUTPUT ${EXECUTABLE_OUTPUT_PATH}/${example}.class
+    COMMAND ${Java_JAVAC_EXECUTABLE} ARGS -classpath "${classpath}"
+    ${CMAKE_CURRENT_SOURCE_DIR}/${example}.java -d ${EXECUTABLE_OUTPUT_PATH}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${example}.java
+    COMMENT "javac ${example}.java"
+    )
+  list(APPEND classfilesdep ${EXECUTABLE_OUTPUT_PATH}/${example}.class)
+ENDFOREACH(example)
+
+# 3. ok now add the target
+ADD_CUSTOM_TARGET(GDCMJavaVTKExample ALL
+  DEPENDS ${classfilesdep}
+  COMMENT "building gdcm java example"
+)
+ADD_DEPENDENCIES(GDCMJavaVTKExample VTKGDCMJavaJar)
+
+IF(BUILD_TESTING)
+  IF(GDCM_DATA_ROOT)
+    #SET_SOURCE_FILES_PROPERTIES(${EXECUTABLE_OUTPUT_PATH}/${test}.class PROPERTIES RUNTIMEPATH "${EXECUTABLE_OUTPUT_PATH}")
+    SET_SOURCE_FILES_PROPERTIES(${EXECUTABLE_OUTPUT_PATH}/HelloVTKWorld.class PROPERTIES CLASSPATH "${EXECUTABLE_OUTPUT_PATH}/vtkgdcm.jar:${GDCM_VTK_JAVA_JAR}")
+    ADD_JAVA_TEST(TestHelloVTKWorldJava ${EXECUTABLE_OUTPUT_PATH}/HelloVTKWorld ${GDCM_DATA_ROOT}/012345.002.050.dcm ${GDCM_TEMP_DIRECTORY}/HelloVTKWorld.dcm)
+    SET_SOURCE_FILES_PROPERTIES(${EXECUTABLE_OUTPUT_PATH}/ReadSeriesIntoVTK.class PROPERTIES CLASSPATH "${EXECUTABLE_OUTPUT_PATH}/vtkgdcm.jar:${GDCM_VTK_JAVA_JAR}")
+    ADD_JAVA_TEST(TestReadSeriesIntoVTKJava ${EXECUTABLE_OUTPUT_PATH}/ReadSeriesIntoVTK)
+    #SET_SOURCE_FILES_PROPERTIES(${EXECUTABLE_OUTPUT_PATH}/AWTMedical3.class PROPERTIES CLASSPATH "${EXECUTABLE_OUTPUT_PATH}/vtkgdcm.jar:${GDCM_VTK_JAVA_JAR}")
+    #ADD_JAVA_TEST(TestAWTMedical3Java ${EXECUTABLE_OUTPUT_PATH}/AWTMedical3)
+  ENDIF(GDCM_DATA_ROOT)
+ENDIF(BUILD_TESTING)
